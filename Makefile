@@ -1,7 +1,7 @@
 SOURCES = $(wildcard src/*.c)
 OBJECTS = $(SOURCES:.c=.o)
 
-CFLAGS = -Wall -Werror
+CFLAGS = -Wall -Werror -ggdb
 LFLAGS = -Isrc/include/
 
 build: $(OBJECTS)
