@@ -13,9 +13,19 @@ Request Request_parse(char *buffer, size_t len, size_t cap) {
   if (wordCount < 3) {
     return (Request){0};
   }
+  Method method;
+  if (strcmp(words[0], "GET") == 0) {
+    method = GET;
+  } else if (strcmp(words[0], "POST") == 0) {
+    method = POST;
+  } else if (strcmp(words[0], "PUT") == 0) {
+    method = PUT;
+  } else if (strcmp(words[0], "DELETE") == 0) {
+    method = DELETE;
+  }
 
   Request req = {
-      .method = words[0],
+      .method = method,
       .path = words[1],
       .protocol = words[2],
   };
@@ -44,10 +54,11 @@ Request Request_parse(char *buffer, size_t len, size_t cap) {
   Header *contentLength = Request_getHeader(&req, "Content-Length");
   if (contentLength == NULL) {
     req.body = "";
+    req.bodyLength = 0;
   } else {
-    int bodySize = atoi(contentLength->value);
-    req.body = calloc(bodySize + 1, sizeof(char));
-    strncpy(req.body, &buffer[i], bodySize);
+    req.bodyLength = atoi(contentLength->value);
+    req.body = calloc(req.bodyLength + 1, sizeof(char));
+    strncpy(req.body, &buffer[i], req.bodyLength);
   }
 
   return req;

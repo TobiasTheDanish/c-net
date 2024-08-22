@@ -12,7 +12,9 @@ typedef struct HTTP_SERVER {
   struct sockaddr_in address;
 } Server;
 
+RequestHandler Server_getHandler(Server *s, Method method, const char *path);
 void Server_handleConnection(Server *s, int conn);
+char *Server_readConnection(int conn, size_t *len, size_t *cap);
 
 Server *Server_new(unsigned short port) {
   int opt = 1;
@@ -66,6 +68,36 @@ void Server_serve(Server *s) {
 }
 
 void Server_handleConnection(Server *s, int conn) {
+  size_t len, cap;
+  char *buffer = Server_readConnection(conn, &len, &cap);
+
+  Request req = Request_parse(buffer, cap, len);
+  if (req.method == UNSUPPORTED) {
+    // TODO: Handle this better at some point
+    close(conn);
+    return;
+  }
+
+  Response response;
+  RequestHandler h = Server_getHandler(s, req.method, req.path);
+  if (h == NULL) {
+    response = Response_notFound("Ressource not found");
+  } else {
+    response = h(&req);
+  }
+
+  const char *res = Response_toBytes(&response);
+
+  printf("Response:\n%s\n", res);
+
+  int valWriten = write(conn, res, strlen(res));
+
+  printf("valWriten: %d\n", valWriten);
+
+  close(conn);
+}
+
+char *Server_readConnection(int conn, size_t *_len, size_t *_cap) {
   int cap = 1024;
   char *buffer = calloc(cap, sizeof(char));
   int valread = read(conn, buffer, cap - 1);
@@ -78,24 +110,11 @@ void Server_handleConnection(Server *s, int conn) {
     len += valread;
   }
 
-  Request req = Request_parse(buffer, cap, len);
-  printf("req: (method: %s, path: %s, protocol: %s)\n", req.method, req.path,
-         req.protocol);
+  *_len = len;
+  *_cap = cap;
+  return buffer;
+}
 
-  for (size_t j = 0; j < req.headerCount; j++) {
-    Header h = req.headers[j];
-    printf("Header #%zu: ('%s': '%s')\n", j, h.key, h.value);
-    free(h.key);
-    free(h.value);
-  }
-
-  printf("Body: %s\n", req.body);
-
-  const char *res = "HTTP/1.1 204 No Content\r\n\r\n";
-
-  int valWriten = write(conn, res, strlen(res));
-
-  printf("valWriten: %d\n", valWriten);
-
-  close(conn);
+RequestHandler Server_getHandler(Server *s, Method m, const char *path) {
+  return NULL;
 }

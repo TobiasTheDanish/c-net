@@ -2,6 +2,14 @@
 #define HTTP_H
 #include <stddef.h>
 
+typedef enum HTTP_METHOD {
+  UNSUPPORTED = 0,
+  GET,
+  POST,
+  PUT,
+  DELETE,
+} Method;
+
 typedef struct HTTP_HEADER {
   char *key;
   char *value;
@@ -16,17 +24,21 @@ typedef struct HTTP_RESPONSE {
   size_t headerCount;
 
   char *body;
+  size_t bodyLength;
 } Response;
+Response Response_notFound(char *body);
+char *Response_toBytes(Response *res);
 
 typedef struct HTTP_REQUEST {
   char *protocol;
-  char *method;
+  Method method;
   char *path;
 
   Header *headers;
   size_t headerCount;
 
   char *body;
+  size_t bodyLength;
 } Request;
 void Request_addHeader(Request *req, Header h);
 Header *Request_getHeader(Request *req, const char *key);
@@ -39,6 +51,7 @@ typedef struct HTTP_SERVER Server;
 Server *Server_new(unsigned short port);
 void Server_serve(Server *s);
 // Example of how request handlers could look
-void Server_addHandler(Server *s, const char *path, RequestHandler handler);
+void Server_addHandler(Server *s, Method method, const char *path,
+                       RequestHandler handler);
 Response IndexHandler(Request *req);
 #endif // !HTTP_H
