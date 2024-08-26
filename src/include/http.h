@@ -15,6 +15,67 @@ typedef struct HTTP_HEADER {
   char *value;
 } Header;
 
+typedef enum HTTP_STATUS {
+  StatusOk = 200,
+  StatusCreated,
+  StatusAccepted,
+  StatusNonAuthoritativeInformation,
+  StatusNoContent,
+  StatusResetContent,
+  StatusPartialContent,
+  StatusMultiStatus,
+  StatusAlreadyReported,
+  StatusImUsed = 226,
+  StatusMultipleChoices = 300,
+  StatusMovedPermanently,
+  StatusFound,
+  StatusSeeOther,
+  StatusNotModified,
+  StatusTemporaryRedirect = 307,
+  StatusPermanentRedirect,
+  StatusBadRequest = 400,
+  StatusUnathorized,
+  StatusPaymentRequired,
+  StatusForbidden,
+  StatusNotFound,
+  StatusMethodNotAllowed,
+  StatusNotAcceptable,
+  StatusProxyAuthenticationRequired,
+  StatusRequestTimeout,
+  StatusConflict,
+  StatusGone,
+  StatusLengthRequired,
+  StatusPreconditionFailed,
+  StatusContentTooLarge,
+  StatusURITooLong,
+  StatusUnsupportedMediaType,
+  StatusRangeNotSatisfiable,
+  StatusExpectationFailed,
+  StatusImATeapot,
+  StatusMisdirectedRequest = 421,
+  StatusUnprocessableContent,
+  StatusLocked,
+  StatusFailedDependency,
+  StatusTooEarly,
+  StatusUpgradeRequired,
+  StatusPreconditionRequired = 428,
+  StatusTooManyRequests,
+  StatusRequestHeaderFieldsTooLarge = 431,
+  StatusUnavailableForLegalReasons,
+  StatusInternalServerError = 500,
+  StatusNotImplemented,
+  StatusBadGateway,
+  StatusServiceUnavailable,
+  StatusGatewayTimeout,
+  StatusHTTPVersionNotSupported,
+  StatusVariantAlsoNegotiates,
+  StatusInsufficientStorage,
+  StatusLoopDetected,
+  StatusNotExtended = 510,
+  StatusNetworkAuthenticationRequired,
+  StatusAmount,
+} Status;
+
 typedef struct HTTP_RESPONSE {
   const char *protocol;
   unsigned int statusCode;
@@ -26,8 +87,11 @@ typedef struct HTTP_RESPONSE {
   char *body;
   size_t bodyLength;
 } Response;
+Response Response_new(const char *protocol, Status status);
+void Response_writeBody(Response *res, char *body, size_t n);
 Response Response_notFound(char *body);
 char *Response_toBytes(Response *res);
+void Response_addHeader(Response *res, Header h);
 
 typedef struct HTTP_REQUEST {
   char *protocol;
