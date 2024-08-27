@@ -69,31 +69,48 @@ Response Response_new(const char *protocol, Status status) {
       .protocol = protocol,
       .statusCode = status,
       .statusText = responseStatusText[status],
+
+      .headers = NULL,
+      .headerCount = 0,
   };
 }
 
-// Content-type
-Response Response_notFound(char *body) {
-  Response res = Response_new("HTTP/1.1", StatusNotFound);
-  size_t bodyLen = strlen(body);
-  res.bodyLength = bodyLen;
-
-  res.headerCount = 1;
-  res.headers = malloc(sizeof(Header));
-  res.headers[0] = (Header){
-      .key = "Content-Length",
-      .value = calloc(20, sizeof(char)),
-  };
-  snprintf(res.headers[0].value, 20, "%lu", bodyLen);
-
-  Response_writeBody(&res, body, bodyLen);
+Response Response_json(Status status, const char *json) {
+  Response res = Response_new("HTTP/1.1", status);
+  Response_addHeader(&res, (Header){
+                               .key = "Content-Type",
+                               .value = "application/json",
+                           });
+  Response_writeBody(&res, json);
 
   return res;
 }
 
-void Response_writeBody(Response *res, char *body, size_t n) {
+Response Response_text(Status status, char *body) {
+  Response res = Response_new("HTTP/1.1", status);
+
+  Response_addHeader(&res, (Header){
+                               .key = "Content-Type",
+                               .value = "plain/text",
+                           });
+  Response_writeBody(&res, body);
+
+  return res;
+}
+
+void Response_writeBody(Response *res, const char *body) {
+  size_t n = strlen(body);
+  Header contentLength = {
+      .key = "Content-Length",
+      .value = calloc(20, sizeof(char)),
+  };
+  snprintf(contentLength.value, 20, "%zu", n);
+  Response_addHeader(res, contentLength);
+
   res->body = malloc(n * sizeof(char));
   strncpy(res->body, body, n);
+
+  res->bodyLength = n;
 }
 
 char *Response_toBytes(Response *res) {
@@ -108,9 +125,9 @@ char *Response_toBytes(Response *res) {
   }
   resSize += 2; // for extra \r\n
 
-  resSize += res->bodyLength + 4; // 4 for final \r\n\r\n
+  resSize += res->bodyLength + 5; // 5 for final \r\n\r\n\0
 
-  char *bytes = calloc(resSize + 1, sizeof(char));
+  char *bytes = calloc(resSize, sizeof(char));
   int byteLen = 0;
   byteLen += snprintf(bytes, resSize, "%s %u %s\r\n", res->protocol,
                       res->statusCode, res->statusText);
@@ -120,6 +137,8 @@ char *Response_toBytes(Response *res) {
     byteLen += snprintf(&bytes[byteLen], resSize - byteLen, "%s:%s\r\n", h.key,
                         h.value);
   }
+
+  // TODO: fix bug with last 4 values in response overflowing
 
   byteLen +=
       snprintf(&bytes[byteLen], resSize - byteLen, "\r\n%s\r\n\r\n", res->body);

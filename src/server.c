@@ -81,16 +81,20 @@ void Server_handleConnection(Server *s, int conn) {
   Response response;
   RequestHandler h = Server_getHandler(s, req.method, req.path);
   if (h == NULL) {
-    response = Response_notFound("Ressource not found");
+    response = Response_text(StatusNotFound, "Resource not found");
   } else {
     response = h(&req);
   }
 
-  const char *res = Response_toBytes(&response);
+  char *res = Response_toBytes(&response);
 
-  printf("Response:\n%s\n", res);
+  printf("Response:\n");
+  for (size_t i = 0; res[i]; i++) {
+    printf("%d ", res[i]);
+  }
 
   int valWriten = write(conn, res, strlen(res));
+  free(res);
 
   printf("valWriten: %d\n", valWriten);
 
