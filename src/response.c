@@ -134,14 +134,28 @@ char *Response_toBytes(Response *res) {
 
   for (size_t i = 0; i < res->headerCount; i++) {
     Header h = res->headers[i];
-    byteLen += snprintf(&bytes[byteLen], resSize - byteLen, "%s:%s\r\n", h.key,
-                        h.value);
+    char headerStr[100];
+    size_t headerStrLen = snprintf(headerStr, 100, "%s:%s\r\n", h.key, h.value);
+    if (byteLen + headerStrLen >= resSize) {
+      printf("ERROR when serializing response. Could not write header '%s', "
+             "since it would overflow buffer, maybe buffer size is not "
+             "calculated correctly\n",
+             h.key);
+      exit(1);
+    }
+
+    strncpy(&bytes[byteLen], headerStr, headerStrLen);
+    byteLen += headerStrLen;
   }
 
-  // TODO: fix bug with last 4 values in response overflowing
+  bytes[byteLen++] = '\r';
+  bytes[byteLen++] = '\n';
+  // TODO: fix bug with last 4 values in response overflowing after 3 requests
 
-  byteLen +=
-      snprintf(&bytes[byteLen], resSize - byteLen, "\r\n%s\r\n\r\n", res->body);
+  strncpy(&bytes[byteLen], res->body, res->bodyLength);
+  byteLen += res->bodyLength;
+  strncpy(&bytes[byteLen], "\r\n\r\n", 5);
+  byteLen += 4;
 
   return bytes;
 }
