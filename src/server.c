@@ -6,10 +6,18 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+typedef struct HTTP_HANDLER_NODE {
+  Method method;
+  const char *path;
+  RequestHandler handler;
+} HandlerNode;
+
 typedef struct HTTP_SERVER {
   int socket;
   unsigned short port;
   struct sockaddr_in address;
+  HandlerNode *handlers;
+  size_t handlerCount;
 } Server;
 
 RequestHandler Server_getHandler(Server *s, Method method, const char *path);
@@ -45,6 +53,7 @@ Server *Server_new(unsigned short port) {
   s->socket = sockfd;
   s->address = address;
   s->port = port;
+  s->handlers = NULL;
   return s;
 }
 
@@ -88,12 +97,8 @@ void Server_handleConnection(Server *s, int conn) {
 
   char *res = Response_toBytes(&response);
 
-  printf("Response:\n%s", res);
-
-  int valWriten = write(conn, res, strlen(res));
+  write(conn, res, strlen(res));
   free(res);
-
-  printf("valWriten: %d\n", valWriten);
 
   close(conn);
 }
@@ -116,6 +121,24 @@ char *Server_readConnection(int conn, size_t *_len, size_t *_cap) {
   return buffer;
 }
 
+void Server_addHandler(Server *s, Method method, const char *path,
+                       RequestHandler handler) {
+  s->handlers =
+      realloc(s->handlers, (s->handlerCount + 1) * sizeof(HandlerNode));
+  s->handlers[s->handlerCount++] = (HandlerNode){
+      .method = method,
+      .path = path,
+      .handler = handler,
+  };
+}
+
 RequestHandler Server_getHandler(Server *s, Method m, const char *path) {
+  for (size_t i = 0; i < s->handlerCount; i++) {
+    HandlerNode n = s->handlers[i];
+    if (n.method == m && strcmp(n.path, path) == 0) {
+      return n.handler;
+    }
+  }
+
   return NULL;
 }

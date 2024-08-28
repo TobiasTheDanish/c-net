@@ -91,7 +91,7 @@ Response Response_text(Status status, char *body) {
 
   Response_addHeader(&res, (Header){
                                .key = "Content-Type",
-                               .value = "plain/text",
+                               .value = "text/plain",
                            });
   Response_writeBody(&res, body);
 
