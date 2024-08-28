@@ -88,10 +88,7 @@ void Server_handleConnection(Server *s, int conn) {
 
   char *res = Response_toBytes(&response);
 
-  printf("Response:\n");
-  for (size_t i = 0; res[i]; i++) {
-    printf("%d ", res[i]);
-  }
+  printf("Response:\n%s", res);
 
   int valWriten = write(conn, res, strlen(res));
   free(res);
