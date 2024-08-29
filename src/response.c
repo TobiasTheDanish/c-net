@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 Response Response_new(const char *protocol, Status status);
 void Response_writeBody(Response *res, const char *body);
 char *Response_toBytes(Response *res);
@@ -108,6 +109,30 @@ Response Response_text(Status status, const char *body) {
                                .value = "text/plain",
                            });
   Response_writeBody(&res, body);
+
+  return res;
+}
+
+Response Response_file(Status status, char *contentType, const char *filepath) {
+  FILE *f = fopen(filepath, "r");
+  if (f == NULL) {
+    return Response_text(StatusNotFound, "File not found");
+  }
+
+  char content[2048] = {0};
+
+  if (!(fread(content, sizeof(char), 2047, f))) {
+    printf("Could not read index.html\n");
+    return Response_text(StatusInternalServerError, "Error reading file");
+  }
+
+  Response res = Response_new("HTTP/1.1", status);
+
+  Response_addHeader(&res, (Header){
+                               .key = "Content-Type",
+                               .value = contentType,
+                           });
+  Response_writeBody(&res, content);
 
   return res;
 }

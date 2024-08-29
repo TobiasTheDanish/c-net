@@ -28,6 +28,12 @@ Request Request_parse(char *buffer, size_t len, size_t cap) {
       .method = method,
       .path = words[1],
       .protocol = words[2],
+
+      .headers = NULL,
+      .headerCount = 0,
+
+      .body = NULL,
+      .bodyLength = 0,
   };
 
   while (buffer[i] != '\0' && i < len) {
@@ -52,10 +58,7 @@ Request Request_parse(char *buffer, size_t len, size_t cap) {
   }
 
   Header *contentLength = Request_getHeader(&req, "Content-Length");
-  if (contentLength == NULL) {
-    req.body = "";
-    req.bodyLength = 0;
-  } else {
+  if (contentLength != NULL) {
     req.bodyLength = atoi(contentLength->value);
     req.body = calloc(req.bodyLength + 1, sizeof(char));
     strncpy(req.body, &buffer[i], req.bodyLength);

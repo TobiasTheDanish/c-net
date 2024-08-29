@@ -16,23 +16,7 @@ int main() {
 }
 
 Response indexHandler(Request *req) {
-  printf("IndexHandler hit\n");
-
-  FILE *f = fopen("index.html", "r");
-
-  if (f != NULL) {
-    char content[2048] = {0};
-
-    if (!(fread(content, sizeof(char), 2047, f))) {
-      printf("Could not read index.html\n");
-      return Response_text(StatusInternalServerError, "Error reading file");
-    }
-
-    return Response_html(StatusOk, content);
-  } else {
-    printf("Could not find index.html\n");
-    return Response_text(StatusInternalServerError, "Error reading file");
-  }
+  return Response_file(StatusOk, "text/html", "index.html");
 }
 
 Response apiHandler(Request *req) {
