@@ -64,6 +64,8 @@ void Server_serve(Server *s) {
   }
   socklen_t addrlen = sizeof(s->address);
 
+  printf("Server listening on port '%d'\n", s->port);
+
   while (1) {
     int new_socket =
         accept(s->socket, (struct sockaddr *)&s->address, &addrlen);

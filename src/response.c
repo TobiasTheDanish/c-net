@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+Response Response_new(const char *protocol, Status status);
+void Response_writeBody(Response *res, const char *body);
+char *Response_toBytes(Response *res);
 
 static const char *responseStatusText[StatusAmount] = {
     [StatusOk] = "OK",
@@ -86,7 +89,18 @@ Response Response_json(Status status, const char *json) {
   return res;
 }
 
-Response Response_text(Status status, char *body) {
+Response Response_html(Status status, const char *html) {
+  Response res = Response_new("HTTP/1.1", status);
+  Response_addHeader(&res, (Header){
+                               .key = "Content-Type",
+                               .value = "text/html",
+                           });
+  Response_writeBody(&res, html);
+
+  return res;
+}
+
+Response Response_text(Status status, const char *body) {
   Response res = Response_new("HTTP/1.1", status);
 
   Response_addHeader(&res, (Header){

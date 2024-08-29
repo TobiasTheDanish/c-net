@@ -87,11 +87,9 @@ typedef struct HTTP_RESPONSE {
   char *body;
   size_t bodyLength;
 } Response;
+Response Response_text(Status status, const char *body);
+Response Response_html(Status status, const char *body);
 Response Response_json(Status status, const char *json);
-Response Response_new(const char *protocol, Status status);
-void Response_writeBody(Response *res, const char *body);
-Response Response_text(Status status, char *body);
-char *Response_toBytes(Response *res);
 void Response_addHeader(Response *res, Header h);
 
 typedef struct HTTP_REQUEST {
