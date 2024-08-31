@@ -119,12 +119,20 @@ Response Response_file(Status status, char *contentType, const char *filepath) {
     return Response_text(StatusNotFound, "File not found");
   }
 
-  char content[2048] = {0};
+  char *content = NULL;
+  size_t contentLength = 0;
 
-  if (!(fread(content, sizeof(char), 2047, f))) {
+  while (!feof(f)) {
+    content = realloc(content, (contentLength + 2048) * sizeof(char));
+    contentLength += fread(&content[contentLength], sizeof(char), 2047, f);
+  }
+
+  if (contentLength == 0) {
     printf("Could not read index.html\n");
     return Response_text(StatusInternalServerError, "Error reading file");
   }
+
+  fclose(f);
 
   Response res = Response_new("HTTP/1.1", status);
 
