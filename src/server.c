@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-extern char *Response_toBytes(Response *res);
+extern char *Response_toBytes(Response *res, size_t *size);
 
 typedef struct HTTP_HANDLER_NODE {
   Method method;
@@ -102,9 +102,10 @@ void Server_handleConnection(Server *s, int conn) {
   printf("%s %s: %d \n", Request_methodName(req.method), req.path,
          response.statusCode);
 
-  char *res = Response_toBytes(&response);
+  size_t resSize = 0;
+  char *res = Response_toBytes(&response, &resSize);
 
-  write(conn, res, strlen(res));
+  write(conn, res, resSize);
   free(req.headers);
   free(req.body);
 

@@ -5,8 +5,8 @@
 #include <string.h>
 
 Response Response_new(const char *protocol, Status status);
-void Response_writeBody(Response *res, const char *body);
-char *Response_toBytes(Response *res);
+void Response_writeBody(Response *res, const char *body, size_t n);
+char *Response_toBytes(Response *res, size_t *size);
 
 static const char *responseStatusText[StatusAmount] = {
     [StatusOk] = "OK",
@@ -85,7 +85,7 @@ Response Response_json(Status status, const char *json) {
                                .key = "Content-Type",
                                .value = "application/json",
                            });
-  Response_writeBody(&res, json);
+  Response_writeBody(&res, json, strlen(json));
 
   return res;
 }
@@ -96,7 +96,7 @@ Response Response_html(Status status, const char *html) {
                                .key = "Content-Type",
                                .value = "text/html",
                            });
-  Response_writeBody(&res, html);
+  Response_writeBody(&res, html, strlen(html));
 
   return res;
 }
@@ -108,7 +108,7 @@ Response Response_text(Status status, const char *body) {
                                .key = "Content-Type",
                                .value = "text/plain",
                            });
-  Response_writeBody(&res, body);
+  Response_writeBody(&res, body, strlen(body));
 
   return res;
 }
@@ -140,13 +140,16 @@ Response Response_file(Status status, char *contentType, const char *filepath) {
                                .key = "Content-Type",
                                .value = contentType,
                            });
-  Response_writeBody(&res, content);
+  Response_writeBody(&res, content, contentLength);
 
   return res;
 }
 
-void Response_writeBody(Response *res, const char *body) {
-  size_t n = strlen(body);
+// TODO: Implement function for writing image data
+
+void Response_writeBody(Response *res, const char *body, size_t n) {
+  if (n == 0)
+    n = strlen(body);
   Header contentLength = {
       .key = "Content-Length",
       .value = calloc(20, sizeof(char)),
@@ -160,7 +163,7 @@ void Response_writeBody(Response *res, const char *body) {
   res->bodyLength = n;
 }
 
-char *Response_toBytes(Response *res) {
+char *Response_toBytes(Response *res, size_t *size) {
   int resSize = strlen(res->protocol);
   resSize += strlen(res->statusText);
   resSize += 3; // the statuscode
@@ -197,12 +200,13 @@ char *Response_toBytes(Response *res) {
 
   bytes[byteLen++] = '\r';
   bytes[byteLen++] = '\n';
-  // TODO: fix bug with last 4 values in response overflowing after 3 requests
+  bytes[byteLen++] = '\n';
 
-  strncpy(&bytes[byteLen], res->body, res->bodyLength);
+  memcpy(&bytes[byteLen], res->body, res->bodyLength);
   byteLen += res->bodyLength;
   strncpy(&bytes[byteLen], "\r\n\r\n", 5);
   byteLen += 4;
+  *size = byteLen;
 
   return bytes;
 }
