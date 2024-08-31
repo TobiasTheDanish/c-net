@@ -107,6 +107,7 @@ typedef struct HTTP_REQUEST {
 void Request_addHeader(Request *req, Header h);
 Header *Request_getHeader(Request *req, const char *key);
 Request Request_parse(char *buffer, size_t len, size_t cap);
+const char *Request_methodName(Method m);
 
 typedef Response (*RequestHandler)(Request *);
 

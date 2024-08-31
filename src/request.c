@@ -3,6 +3,21 @@
 #include <stdlib.h>
 #include <string.h>
 
+const char *Request_methodName(Method m) {
+  switch (m) {
+  case GET:
+    return "GET";
+  case POST:
+    return "POST";
+  case PUT:
+    return "PUT";
+  case DELETE:
+    return "DELETE";
+  default:
+    return "UNSUPPORTED";
+  }
+}
+
 Request Request_parse(char *buffer, size_t len, size_t cap) {
   size_t i = 0;
   char *requestLine = readline(buffer, len, &i);

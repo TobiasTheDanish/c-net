@@ -99,6 +99,9 @@ void Server_handleConnection(Server *s, int conn) {
     response = h(&req);
   }
 
+  printf("%s %s: %d \n", Request_methodName(req.method), req.path,
+         response.statusCode);
+
   char *res = Response_toBytes(&response);
 
   write(conn, res, strlen(res));
