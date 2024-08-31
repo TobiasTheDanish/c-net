@@ -22,7 +22,7 @@ Response indexHandler(Request *req) {
 }
 
 Response faviconHandler(Request *req) {
-  return Response_file(StatusOk, "image/vnd.microsoft.icon", "favicon.ico");
+  return Response_file(StatusOk, "image/png", "favicon.png");
 }
 
 Response apiHandler(Request *req) {
