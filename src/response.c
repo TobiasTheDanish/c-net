@@ -113,7 +113,42 @@ Response Response_text(Status status, const char *body) {
   return res;
 }
 
-Response Response_file(Status status, char *contentType, const char *filepath) {
+Response Response_binaryFile(Status status, char *contentType,
+                             const char *filepath) {
+  FILE *f = fopen(filepath, "rb");
+  if (f == NULL) {
+    return Response_text(StatusNotFound, "File not found");
+  }
+
+  char *content = NULL;
+  size_t contentLength = 0;
+
+  while (!feof(f)) {
+    content = realloc(content, (contentLength + 2048) * sizeof(char));
+    contentLength += fread(&content[contentLength], sizeof(char), 2048, f);
+  }
+
+  if (contentLength == 0) {
+    printf("Could not read %s\n", filepath);
+    return Response_text(StatusInternalServerError, "Error reading file");
+  }
+
+  fclose(f);
+
+  Response res = Response_new("HTTP/1.1", status);
+
+  Response_addHeader(&res, (Header){
+                               .key = "Content-Type",
+                               .value = contentType,
+                           });
+  Response_writeBody(&res, content, contentLength);
+  free(content);
+
+  return res;
+}
+
+Response Response_textFile(Status status, char *contentType,
+                           const char *filepath) {
   FILE *f = fopen(filepath, "r");
   if (f == NULL) {
     return Response_text(StatusNotFound, "File not found");
@@ -128,7 +163,7 @@ Response Response_file(Status status, char *contentType, const char *filepath) {
   }
 
   if (contentLength == 0) {
-    printf("Could not read index.html\n");
+    printf("Could not read %s\n", filepath);
     return Response_text(StatusInternalServerError, "Error reading file");
   }
 
@@ -141,11 +176,10 @@ Response Response_file(Status status, char *contentType, const char *filepath) {
                                .value = contentType,
                            });
   Response_writeBody(&res, content, contentLength);
+  free(content);
 
   return res;
 }
-
-// TODO: Implement function for writing image data
 
 void Response_writeBody(Response *res, const char *body, size_t n) {
   if (n == 0)
@@ -157,55 +191,53 @@ void Response_writeBody(Response *res, const char *body, size_t n) {
   snprintf(contentLength.value, 20, "%zu", n);
   Response_addHeader(res, contentLength);
 
-  res->body = malloc(n * sizeof(char));
-  strncpy(res->body, body, n);
+  res->body = calloc(n, sizeof(char));
+  memcpy(res->body, body, n);
 
   res->bodyLength = n;
 }
 
 char *Response_toBytes(Response *res, size_t *size) {
-  int resSize = strlen(res->protocol);
-  resSize += strlen(res->statusText);
-  resSize += 3; // the statuscode
-  resSize += 4; // spaces and \r\n
+  size_t resSize =
+      strlen(res->protocol) + 10; // protocol + status code + status text
+  resSize += strlen(res->statusText) + 4; // spaces and \r\n
 
   for (size_t i = 0; i < res->headerCount; i++) {
-    resSize += strlen(res->headers[i].key) + strlen(res->headers[i].value) +
-               3; // 1 for the ':' and 2 for \r\n
+    resSize += strlen(res->headers[i].key) + strlen(res->headers[i].value) + 4;
   }
-  resSize += 2; // for extra \r\n
 
-  resSize += res->bodyLength + 5; // 5 for final \r\n\r\n\0
+  resSize += 4; // Extra \r\n after headers
+  resSize += res->bodyLength;
+  resSize += 4; // Final \r\n\r\n after the body
 
-  char *bytes = calloc(resSize, sizeof(char));
-  int byteLen = 0;
-  byteLen += snprintf(bytes, resSize, "%s %u %s\r\n", res->protocol,
-                      res->statusCode, res->statusText);
+  char *bytes = malloc(resSize);
+  if (bytes == NULL) {
+    perror("Failed to allocate memory");
+    exit(EXIT_FAILURE);
+  }
+
+  int byteLen = snprintf(bytes, resSize, "%s %u %s\r\n", res->protocol,
+                         res->statusCode, res->statusText);
 
   for (size_t i = 0; i < res->headerCount; i++) {
     Header h = res->headers[i];
-    char headerStr[100];
-    size_t headerStrLen = snprintf(headerStr, 100, "%s:%s\r\n", h.key, h.value);
-    if (byteLen + headerStrLen >= resSize) {
-      printf("ERROR when serializing response. Could not write header '%s', "
-             "since it would overflow buffer, maybe buffer size is not "
-             "calculated correctly\n",
-             h.key);
-      exit(1);
-    }
-
-    strncpy(&bytes[byteLen], headerStr, headerStrLen);
-    byteLen += headerStrLen;
+    byteLen += snprintf(bytes + byteLen, resSize - byteLen, "%s: %s\r\n", h.key,
+                        h.value);
   }
 
+  // Add the extra \r\n to separate headers and body
   bytes[byteLen++] = '\r';
   bytes[byteLen++] = '\n';
+
+  memcpy(bytes + byteLen, res->body, res->bodyLength);
+  byteLen += res->bodyLength;
+
+  // Add the final \r\n\r\n at the end of the body
+  bytes[byteLen++] = '\r';
+  bytes[byteLen++] = '\n';
+  bytes[byteLen++] = '\r';
   bytes[byteLen++] = '\n';
 
-  memcpy(&bytes[byteLen], res->body, res->bodyLength);
-  byteLen += res->bodyLength;
-  strncpy(&bytes[byteLen], "\r\n\r\n", 5);
-  byteLen += 4;
   *size = byteLen;
 
   return bytes;
