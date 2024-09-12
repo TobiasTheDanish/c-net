@@ -90,7 +90,10 @@ typedef struct HTTP_RESPONSE {
 Response Response_text(Status status, const char *body);
 Response Response_html(Status status, const char *body);
 Response Response_json(Status status, const char *json);
-Response Response_file(Status status, char *contentType, const char *filepath);
+Response Response_textFile(Status status, char *contentType,
+                           const char *filepath);
+Response Response_binaryFile(Status status, char *contentType,
+                             const char *filepath);
 void Response_addHeader(Response *res, Header h);
 
 typedef struct HTTP_REQUEST {
