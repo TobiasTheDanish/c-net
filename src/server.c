@@ -109,6 +109,9 @@ void Server_handleConnection(Server *s, int conn) {
   free(req.headers);
   free(req.body);
 
+  free(response.headers);
+  free(response.body);
+
   free(res);
   free(buffer);
 
