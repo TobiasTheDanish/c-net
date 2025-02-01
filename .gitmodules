@@ -1,0 +1,3 @@
+[submodule "vendor/coroutines"]
+	path = vendor/coroutines
+	url = https://github.com/tsoding/coroutines
