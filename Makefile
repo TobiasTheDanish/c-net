@@ -5,7 +5,7 @@ CFLAGS = -Wall -Werror -ggdb
 LFLAGS = -Isrc/include/
 
 build: $(OBJECTS)
-	@gcc $(OBJECTS) $(CFLAGS) -o c-net
+	@gcc $(OBJECTS) $(CFLAGS) -o c-net -lrt
 
 %.o: %.c include/%.h
-	@gcc -c $(CFLAGS) $< -o $@
+	@gcc -c $(CFLAGS) $< -o $@ -lrt

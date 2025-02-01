@@ -24,7 +24,7 @@ typedef struct HTTP_SERVER {
 
 RequestHandler Server_getHandler(Server *s, Method method, const char *path);
 void Server_handleConnection(Server *s, int conn);
-char *Server_readConnection(int conn, size_t *len, size_t *cap);
+char *Server_readConnection(int conn, size_t *len);
 
 Server *Server_new(unsigned short port) {
   int opt = 1;
@@ -81,22 +81,22 @@ void Server_serve(Server *s) {
 }
 
 void Server_handleConnection(Server *s, int conn) {
-  size_t len, cap;
-  char *buffer = Server_readConnection(conn, &len, &cap);
+  size_t len;
+  char *buffer = Server_readConnection(conn, &len);
 
-  Request req = Request_parse(buffer, cap, len);
-  if (req.method == UNSUPPORTED) {
-    // TODO: Handle this better at some point
-    close(conn);
-    return;
-  }
+  Request req = Request_parse(buffer, len);
 
   Response response;
-  RequestHandler h = Server_getHandler(s, req.method, req.path);
-  if (h == NULL) {
-    response = Response_text(StatusNotFound, "Resource not found");
+
+  if (req.method == UNSUPPORTED) {
+    response = Response_text(StatusMethodNotAllowed, "Method not supported");
   } else {
-    response = h(&req);
+    RequestHandler h = Server_getHandler(s, req.method, req.path);
+    if (h == NULL) {
+      response = Response_text(StatusNotFound, "Resource not found");
+    } else {
+      response = h(&req);
+    }
   }
 
   printf("%s %s: %d \n", Request_methodName(req.method), req.path,
@@ -118,7 +118,7 @@ void Server_handleConnection(Server *s, int conn) {
   close(conn);
 }
 
-char *Server_readConnection(int conn, size_t *_len, size_t *_cap) {
+char *Server_readConnection(int conn, size_t *_len) {
   int cap = 1024;
   char *buffer = calloc(cap, sizeof(char));
   int valread = read(conn, buffer, cap - 1);
@@ -132,7 +132,6 @@ char *Server_readConnection(int conn, size_t *_len, size_t *_cap) {
   }
 
   *_len = len;
-  *_cap = cap;
   return buffer;
 }
 

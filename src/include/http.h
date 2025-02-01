@@ -109,7 +109,7 @@ typedef struct HTTP_REQUEST {
 } Request;
 void Request_addHeader(Request *req, Header h);
 Header *Request_getHeader(Request *req, const char *key);
-Request Request_parse(char *buffer, size_t len, size_t cap);
+Request Request_parse(char *buffer, size_t len);
 const char *Request_methodName(Method m);
 
 typedef Response (*RequestHandler)(Request *);
@@ -118,6 +118,7 @@ typedef struct HTTP_SERVER Server;
 
 Server *Server_new(unsigned short port);
 void Server_serve(Server *s);
+void Server_serveAsync(Server *s);
 // Example of how request handlers could look
 void Server_addHandler(Server *s, Method method, const char *path,
                        RequestHandler handler);

@@ -18,7 +18,7 @@ const char *Request_methodName(Method m) {
   }
 }
 
-Request Request_parse(char *buffer, size_t len, size_t cap) {
+Request Request_parse(char *buffer, size_t len) {
   size_t i = 0;
   char *requestLine = readline(buffer, len, &i);
   size_t wordCount = 0;

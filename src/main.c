@@ -15,7 +15,7 @@ int main() {
   Server_addHandler(s, GET, "/router.png", routerHandler);
   Server_addHandler(s, POST, "/api", apiHandler);
 
-  Server_serve(s);
+  Server_serveAsync(s);
   return 0;
 }
 
